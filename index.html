@@ -831,7 +831,7 @@
 // 线上部署：改成你的 Worker 域名
 const WORKER_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
   ? ""  // 本地通过 server.js 同源代理，无需域名前缀
-  : "你的Cloudflare Worker域名"; // ← 部署时替换为你的 Worker 域名
+  : "https://cloweather-api.cloweather.workers.dev"; // ← Cloudflare Worker 域名
 
 // ===== 天气图标映射 =====
 const WEATHER_ICONS = {
