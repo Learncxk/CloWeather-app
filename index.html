@@ -825,12 +825,6 @@
 </div>
 
 <script>
-// ===== 配置 =====
-// 自动检测运行环境
-// Vercel / GitHub Pages / 本地：API 同源（/api/*）
-// Cloudflare Workers 部署时改成 Worker 域名
-const WORKER_BASE_URL = ""; // Cloudflare Pages 同源部署 // Cloudflare Pages 同源部署 // Cloudflare Workers 域名（备用）
-
 // ===== 天气图标映射 =====
 const WEATHER_ICONS = {
   "01d": "☀️", "01n": "🌙",
@@ -1024,16 +1018,35 @@ function showToast(msg, duration) {
   setTimeout(() => { el.remove(); }, duration || 2500);
 }
 
-// ===== API 请求 =====
+// ===== API 请求（直连 OpenWeatherMap） =====
+// 注意：API Key 暴露在前端代码中，免费版有每分钟 60 次调用限制
+// 后续盈利版本请通过后端代理隐藏 Key
+const OWM_KEY = "4216c4a78dac4d6f9800810f352d3cf7";
+const OWM_BASE = "https://api.openweathermap.org";
 
 async function apiFetch(path) {
-  const url = `${WORKER_BASE_URL}${path}`;
+  // 解析 path，例如 /api/geo?q=北京 或 /api/weather?lat=xx&lon=xx
+  const queryStart = path.indexOf("?");
+  const route = queryStart >= 0 ? path.substring(0, queryStart) : path;
+  const queryStr = queryStart >= 0 ? path.substring(queryStart) : "";
+
+  let url;
+  if (route === "/api/geo") {
+    url = `${OWM_BASE}/geo/1.0/direct${queryStr}&limit=5&appid=${OWM_KEY}`;
+  } else if (route === "/api/weather") {
+    url = `${OWM_BASE}/data/2.5/weather${queryStr}&units=metric&lang=zh_cn&appid=${OWM_KEY}`;
+  } else if (route === "/api/forecast") {
+    url = `${OWM_BASE}/data/2.5/forecast${queryStr}&units=metric&lang=zh_cn&appid=${OWM_KEY}`;
+  } else {
+    throw new Error(`未知 API 路由: ${route}`);
+  }
+
   const resp = await fetch(url);
   if (!resp.ok) {
-    let errMsg = `请求失败 (${resp.status})`;
+    let errMsg = `天气服务请求失败 (${resp.status})`;
     try {
       const err = await resp.json();
-      if (err.error) errMsg = err.error;
+      if (err.message) errMsg = err.message;
     } catch (_) {}
     throw new Error(errMsg);
   }
