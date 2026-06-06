@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CloWeather — 天气穿搭推荐</title>
+  <!-- html2canvas CDN（用于分享截图） -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    /* ===== 全局重置 ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+    /* ===== 应用容器 ===== */
+    .app-container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+    /* ===== 顶部标题 ===== */
+    .app-header {
+      padding: 20px 0 12px;
+      text-align: center;
+    }
+    .app-header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #FF6B6B, #EE5A24);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .app-header p {
+      font-size: 13px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    /* ===== 试用期横幅 ===== */
+    .trial-banner {
+      position: relative;
+      background: linear-gradient(135deg, #FF6B6B 0%, #FFA94D 100%);
+      color: #fff;
+      border-radius: 16px;
+      padding: 14px 40px 14px 16px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.5;
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.25);
+    }
+    .trial-banner .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: rgba(255,255,255,0.25);
+      border: none;
+      color: #fff;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .trial-banner .close-btn:hover { background: rgba(255,255,255,0.4); }
+
+    /* ===== 付费横幅（到期后固定顶部） ===== */
+    .pay-banner {
+      background: linear-gradient(135deg, #FF6B6B, #EE5A24);
+      color: #fff;
+      border-radius: 16px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 12px rgba(238, 90, 36, 0.25);
+    }
+    .pay-banner span { font-size: 14px; font-weight: 500; }
+    .pay-banner button {
+      background: #fff;
+      color: #EE5A24;
+      border: none;
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .pay-banner button:hover { opacity: 0.9; }
+
+    /* ===== 卡片通用 ===== */
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ===== 城市搜索 ===== */
+    .search-section { position: relative; }
+    .search-input-wrap {
+      display: flex;
+      gap: 8px;
+    }
+    .search-input-wrap input {
+      flex: 1;
+      height: 44px;
+      border: 2px solid #eee;
+      border-radius: 12px;
+      padding: 0 16px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input-wrap input:focus {
+      border-color: #FF6B6B;
+    }
+    .search-input-wrap input::placeholder { color: #bbb; }
+    .search-btn {
+      height: 44px;
+      padding: 0 18px;
+      background: linear-gradient(135deg, #FF6B6B, #EE5A24);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .search-btn:hover { opacity: 0.9; }
+    .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* 自动补全下拉 */
+    .suggestions {
+      position: absolute;
+      top: 52px;
+      left: 0;
+      right: 76px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      z-index: 100;
+      max-height: 220px;
+      overflow-y: auto;
+      display: none;
+    }
+    .suggestions.show { display: block; }
+    .suggestions .item {
+      padding: 12px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .suggestions .item:last-child { border-bottom: none; }
+    .suggestions .item:hover { background: #fff5f5; }
+    .suggestions .item .sub {
+      font-size: 12px;
+      color: #999;
+      margin-left: 8px;
+    }
+
+    /* 快捷城市按钮 */
+    .quick-cities {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .quick-cities button {
+      padding: 6px 16px;
+      background: #fff5f5;
+      color: #FF6B6B;
+      border: 1px solid #ffd4d4;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quick-cities button:hover {
+      background: #FF6B6B;
+      color: #fff;
+      border-color: #FF6B6B;
+    }
+
+    /* ===== 天气显示 ===== */
+    .weather-card {
+      text-align: center;
+      transition: background 0.5s;
+      position: relative;
+      overflow: hidden;
+    }
+    .weather-card .city-name {
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .weather-card .date-display {
+      font-size: 13px;
+      color: #999;
+      margin-top: 2px;
+    }
+    .weather-card .weather-emoji {
+      font-size: 64px;
+      margin: 8px 0;
+    }
+    .weather-card .temp-display {
+      font-size: 48px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .weather-card .temp-display .unit {
+      font-size: 24px;
+      font-weight: 400;
+      color: #888;
+    }
+    .weather-card .weather-desc {
+      font-size: 15px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .weather-details {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 14px;
+      font-size: 14px;
+      color: #777;
+    }
+    .weather-details .item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .weather-details .item .label {
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    /* ===== 穿搭推荐 ===== */
+    .outfit-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .outfit-card .outfit-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .outfit-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .outfit-tags .tag {
+      padding: 6px 14px;
+      background: #fff5f5;
+      color: #FF6B6B;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .outfit-tags .tag.match {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .outfit-tips {
+      padding: 12px 16px;
+      background: #fff8e1;
+      border-radius: 12px;
+      font-size: 13px;
+      color: #f57f17;
+      line-height: 1.6;
+    }
+
+    /* ===== 锁定遮罩（降级用户） ===== */
+    .locked-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 16px;
+      z-index: 10;
+    }
+    .locked-overlay .lock-icon {
+      font-size: 40px;
+      margin-bottom: 8px;
+    }
+    .locked-overlay p {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 12px;
+    }
+    .locked-overlay button {
+      padding: 10px 28px;
+      background: linear-gradient(135deg, #FF6B6B, #EE5A24);
+      color: #fff;
+      border: none;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .locked-overlay button:hover { opacity: 0.9; }
+
+    /* ===== 预报横向滚动 ===== */
+    .forecast-scroll {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: #ffd4d4 transparent;
+    }
+    .forecast-scroll::-webkit-scrollbar {
+      height: 4px;
+    }
+    .forecast-scroll::-webkit-scrollbar-thumb {
+      background: #ffd4d4;
+      border-radius: 4px;
+    }
+    .forecast-item {
+      flex-shrink: 0;
+      width: 120px;
+      background: #fafafa;
+      border-radius: 12px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .forecast-item .day {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .forecast-item .emoji {
+      font-size: 32px;
+      margin: 6px 0;
+    }
+    .forecast-item .temp-range {
+      font-size: 14px;
+      color: #666;
+    }
+
+    /* ===== 衣橱管理 ===== */
+    .wardrobe-categories {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .wardrobe-categories button {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid #eee;
+      background: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      color: #666;
+    }
+    .wardrobe-categories button.active {
+      background: #FF6B6B;
+      color: #fff;
+      border-color: #FF6B6B;
+    }
+    .wardrobe-items {
+      min-height: 60px;
+    }
+    .wardrobe-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #fafafa;
+      border-radius: 10px;
+      margin-bottom: 6px;
+    }
+    .wardrobe-item .info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+    .wardrobe-item .season-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+    .wardrobe-item .season-tag.autumn-winter { background: #fce4ec; color: #c62828; }
+    .wardrobe-item .season-tag.all-season { background: #e8f5e9; color: #2e7d32; }
+    .wardrobe-item .del-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: #fee;
+      color: #e53935;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .add-wardrobe-form {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .add-wardrobe-form input {
+      flex: 1;
+      min-width: 140px;
+      height: 38px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 0 12px;
+      font-size: 14px;
+    }
+    .add-wardrobe-form select {
+      height: 38px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 0 10px;
+      font-size: 14px;
+      background: #fff;
+    }
+    .add-wardrobe-form button {
+      height: 38px;
+      padding: 0 16px;
+      background: linear-gradient(135deg, #FF6B6B, #EE5A24);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* ===== 历史记录 ===== */
+    .history-list { max-height: 300px; overflow-y: auto; }
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-item .h-date {
+      font-size: 12px;
+      color: #999;
+      min-width: 80px;
+    }
+    .history-item .h-info {
+      flex: 1;
+      font-size: 14px;
+    }
+    .history-item .h-info .h-city {
+      font-weight: 500;
+    }
+
+    /* ===== 购买弹窗 ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 20px;
+      padding: 28px 24px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      animation: modalIn 0.3s ease;
+    }
+    @keyframes modalIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal h2 {
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+    .modal .subtitle {
+      color: #999;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    .modal .benefits {
+      text-align: left;
+      margin-bottom: 20px;
+    }
+    .modal .benefits .item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      font-size: 14px;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .modal .benefits .item:last-child { border-bottom: none; }
+    .modal .price {
+      font-size: 28px;
+      font-weight: 700;
+      color: #EE5A24;
+      margin-bottom: 16px;
+    }
+    .modal .price .note {
+      font-size: 13px;
+      font-weight: 400;
+      color: #999;
+    }
+    .modal .pay-btn {
+      width: 100%;
+      height: 48px;
+      background: linear-gradient(135deg, #FF6B6B, #EE5A24);
+      color: #fff;
+      border: none;
+      border-radius: 24px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    .modal .pay-btn:hover { opacity: 0.9; }
+    .modal .cancel-btn {
+      background: none;
+      border: none;
+      color: #999;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* ===== 骨架屏 ===== */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px;
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .skeleton-weather {
+      height: 200px;
+      margin-bottom: 16px;
+    }
+    .skeleton-outfit {
+      height: 160px;
+      margin-bottom: 16px;
+    }
+    .skeleton-forecast {
+      height: 120px;
+      margin-bottom: 16px;
+    }
+
+    /* ===== 分享按钮 ===== */
+    .share-btn {
+      width: 100%;
+      height: 44px;
+      background: #fff;
+      border: 2px solid #FF6B6B;
+      color: #FF6B6B;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .share-btn:hover { background: #fff5f5; }
+
+    /* ===== Toast 提示 ===== */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      z-index: 2000;
+      animation: toastIn 0.3s ease;
+      max-width: 90%;
+      text-align: center;
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ===== 错误提示 ===== */
+    .error-box {
+      text-align: center;
+      padding: 24px 16px;
+    }
+    .error-box p {
+      font-size: 14px;
+      color: #999;
+      margin-bottom: 12px;
+    }
+    .error-box .retry-btn {
+      padding: 8px 24px;
+      background: #FF6B6B;
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* ===== 工具 ===== */
+    .hidden { display: none !important; }
+    .mt-12 { margin-top: 12px; }
+
+    /* ===== 天气主题色背景 ===== */
+    .weather-bg-clear { background: linear-gradient(135deg, #FFB347, #FFD180); }
+    .weather-bg-clouds { background: linear-gradient(135deg, #90A4AE, #B0BEC5); }
+    .weather-bg-rain { background: linear-gradient(135deg, #5C9CE6, #7EB6F0); }
+    .weather-bg-snow { background: linear-gradient(135deg, #E3F2FD, #F5F5F5); }
+    .weather-bg-mist { background: linear-gradient(135deg, #BDBDBD, #D6D6D6); }
+    .weather-bg-thunderstorm { background: linear-gradient(135deg, #4A4A4A, #757575); }
+    .weather-bg-default { background: linear-gradient(135deg, #f5f5f5, #e0e0e0); }
+  </style>
+</head>
+<body>
+
+<div class="app-container" id="app">
+  <!-- 顶部标题 -->
+  <header class="app-header">
+    <h1>CloWeather</h1>
+    <p>天气穿搭推荐 · 智能衣橱</p>
+  </header>
+
+  <!-- 试用期倒计时横幅 -->
+  <div id="trialBanner" class="trial-banner hidden">
+    <span id="trialText"></span>
+    <button class="close-btn" onclick="dismissTrialBanner()">✕</button>
+  </div>
+
+  <!-- 到期付费横幅 -->
+  <div id="payBanner" class="pay-banner hidden">
+    <span>⏰ 试用已到期</span>
+    <button onclick="openPurchaseModal()">¥12 解锁全部</button>
+  </div>
+
+  <!-- 搜索区域 -->
+  <div class="card search-section">
+    <div class="search-input-wrap">
+      <input type="text" id="searchInput" placeholder="搜索城市（如：北京、上海）" autocomplete="off" />
+      <button class="search-btn" id="searchBtn" onclick="handleSearch()">查询</button>
+    </div>
+    <div class="suggestions" id="suggestions"></div>
+    <div class="quick-cities">
+      <button onclick="searchCity('北京')">北京</button>
+      <button onclick="searchCity('上海')">上海</button>
+      <button onclick="searchCity('广州')">广州</button>
+      <button onclick="searchCity('深圳')">深圳</button>
+    </div>
+  </div>
+
+  <!-- 骨架屏加载动画 -->
+  <div id="skeletonLoader" class="hidden">
+    <div class="skeleton skeleton-weather"></div>
+    <div class="skeleton skeleton-outfit"></div>
+    <div class="skeleton skeleton-forecast"></div>
+  </div>
+
+  <!-- 内容区 -->
+  <div id="contentArea">
+    <!-- 天气卡片 -->
+    <div id="weatherCard" class="card weather-card weather-bg-default hidden">
+      <div id="weatherContent">
+        <div class="city-name" id="displayCity">--</div>
+        <div class="date-display" id="displayDate">--</div>
+        <div class="weather-emoji" id="displayEmoji">🌤</div>
+        <div class="temp-display">
+          <span id="displayTemp">--</span><span class="unit">°C</span>
+        </div>
+        <div class="weather-desc" id="displayDesc">--</div>
+        <!-- 详细气象数据（付费/试用可见） -->
+        <div class="weather-details" id="weatherDetails">
+          <div class="item">
+            <span class="label">体感温度</span>
+            <span id="feelsLike">--</span>
+          </div>
+          <div class="item">
+            <span class="label">湿度</span>
+            <span id="humidity">--</span>
+          </div>
+          <div class="item">
+            <span class="label">风速</span>
+            <span id="windSpeed">--</span>
+          </div>
+        </div>
+      </div>
+      <!-- 降级用户：每日查询配额提示 -->
+      <div id="queryLimitMsg" class="hidden" style="margin-top:8px;font-size:13px;color:#e53935;"></div>
+      <!-- 错误提示 -->
+      <div id="weatherError" class="hidden error-box">
+        <p id="errorText">天气获取失败，请稍后重试</p>
+        <button class="retry-btn" onclick="retryLastSearch()">重试</button>
+      </div>
+    </div>
+
+    <!-- 穿搭推荐卡片 -->
+    <div id="outfitCard" class="card outfit-card hidden" style="position:relative;">
+      <div id="outfitContent">
+        <div class="outfit-title" id="outfitTitle">--</div>
+        <div class="outfit-tags" id="outfitTags"></div>
+        <div class="outfit-tips" id="outfitTips"></div>
+      </div>
+      <!-- 降级遮罩 -->
+      <div id="outfitLocked" class="locked-overlay hidden">
+        <div class="lock-icon">🔒</div>
+        <p>穿搭推荐仅限付费用户</p>
+        <button onclick="openPurchaseModal()">¥12 解锁全部功能</button>
+      </div>
+    </div>
+
+    <!-- 分享按钮 -->
+    <button id="shareBtn" class="share-btn hidden" onclick="shareScreenshot()">
+      📸 分享穿搭截图
+    </button>
+
+    <!-- 3天预报 -->
+    <div id="forecastCard" class="card hidden" style="position:relative;">
+      <div class="card-title">📅 未来3天预报</div>
+      <div class="forecast-scroll" id="forecastList"></div>
+      <div id="forecastLocked" class="locked-overlay hidden">
+        <div class="lock-icon">🔒</div>
+        <p>3天预报仅限付费用户</p>
+        <button onclick="openPurchaseModal()">¥12 解锁全部功能</button>
+      </div>
+    </div>
+
+    <!-- 衣橱管理 -->
+    <div id="wardrobeCard" class="card hidden" style="position:relative;">
+      <div class="card-title">👗 我的衣橱</div>
+      <div class="wardrobe-categories" id="wardrobeTabs">
+        <button class="active" data-cat="tops">上装</button>
+        <button data-cat="bottoms">下装</button>
+        <button data-cat="outerwear">外套</button>
+        <button data-cat="shoes">鞋子</button>
+        <button data-cat="accessories">配饰</button>
+      </div>
+      <div class="wardrobe-items" id="wardrobeItems"></div>
+      <div class="add-wardrobe-form">
+        <input id="wardrobeNameInput" placeholder="单品名称" />
+        <select id="wardrobeSeasonSelect">
+          <option value="spring-summer">春夏</option>
+          <option value="autumn-winter">秋冬</option>
+          <option value="all-season">四季</option>
+        </select>
+        <button onclick="addWardrobeItem()">添加</button>
+      </div>
+      <div id="wardrobeLocked" class="locked-overlay hidden">
+        <div class="lock-icon">🔒</div>
+        <p>衣橱管理仅限付费用户</p>
+        <button onclick="openPurchaseModal()">¥12 解锁全部功能</button>
+      </div>
+    </div>
+
+    <!-- 历史记录 -->
+    <div id="historyCard" class="card hidden" style="position:relative;">
+      <div class="card-title">📋 历史记录</div>
+      <div class="history-list" id="historyList"></div>
+      <div id="historyLocked" class="locked-overlay hidden">
+        <div class="lock-icon">🔒</div>
+        <p>历史记录仅限付费用户</p>
+        <button onclick="openPurchaseModal()">¥12 解锁全部功能</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 购买弹窗 -->
+<div class="modal-overlay" id="purchaseModal">
+  <div class="modal">
+    <h2>☕ CloWeather Pro</h2>
+    <p class="subtitle">只需一杯奶茶钱，永久解锁全部功能</p>
+    <div class="benefits">
+      <div class="item">✅ 无限次天气查询</div>
+      <div class="item">✅ 完整穿搭推荐 + 单品清单</div>
+      <div class="item">✅ 3天天气预报</div>
+      <div class="item">✅ 智能衣橱管理</div>
+      <div class="item">✅ 衣橱联动推荐</div>
+      <div class="item">✅ 历史记录</div>
+      <div class="item">✅ 分享截图</div>
+      <div class="item">✅ 多城市收藏</div>
+    </div>
+    <div class="price">
+      ¥12 <span class="note">永久买断</span>
+    </div>
+    <button class="pay-btn" onclick="confirmPurchase()">确认支付 ¥12</button>
+    <div><button class="cancel-btn" onclick="closePurchaseModal()">暂不购买</button></div>
+  </div>
+</div>
+
+<script>
+// ===== 配置 =====
+// 自动检测运行环境
+// 本地开发：用 Node.js server.js（同源代理）
+// 线上部署：改成你的 Worker 域名
+const WORKER_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  ? ""  // 本地通过 server.js 同源代理，无需域名前缀
+  : "你的Cloudflare Worker域名"; // ← 部署时替换为你的 Worker 域名
+
+// ===== 天气图标映射 =====
+const WEATHER_ICONS = {
+  "01d": "☀️", "01n": "🌙",
+  "02d": "⛅", "02n": "☁️",
+  "03d": "☁️", "03n": "☁️",
+  "04d": "☁️", "04n": "☁️",
+  "09d": "🌧️", "09n": "🌧️",
+  "10d": "🌦️", "10n": "🌧️",
+  "11d": "⛈️", "11n": "⛈️",
+  "13d": "🌨️", "13n": "🌨️",
+  "50d": "🌫️", "50n": "🌫️",
+};
+
+const WEATHER_BG_CLASSES = {
+  "01": "weather-bg-clear",
+  "02": "weather-bg-clear",
+  "03": "weather-bg-clouds",
+  "04": "weather-bg-clouds",
+  "09": "weather-bg-rain",
+  "10": "weather-bg-rain",
+  "11": "weather-bg-thunderstorm",
+  "13": "weather-bg-snow",
+  "50": "weather-bg-mist",
+};
+
+// ===== 星期映射 =====
+const WEEKDAYS = ["周日","周一","周二","周三","周四","周五","周六"];
+
+// ===== 状态 =====
+let currentCity = null;          // { name, lat, lon, country, state }
+let lastSearchCity = null;      // 上次成功搜索的城市名，用于重试
+let lastWeatherData = null;
+let wardrobe = { tops: [], bottoms: [], outerwear: [], shoes: [], accessories: [] };
+let history = [];
+let favoriteCities = [];
+let currentWardrobeCat = "tops";
+let searchTimer = null;
+
+// ===== 试用期 & 权限 =====
+
+function initTrial() {
+  if (!localStorage.getItem("trialStartDate")) {
+    localStorage.setItem("trialStartDate", new Date().toISOString().split("T")[0]);
+  }
+}
+
+function getTrialInfo() {
+  const trialStart = new Date(localStorage.getItem("trialStartDate"));
+  const today = new Date();
+  // 将时间归零到日期，保证计算准确
+  const start = new Date(trialStart.getFullYear(), trialStart.getMonth(), trialStart.getDate());
+  const now = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const daysUsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+  const isPro = localStorage.getItem("isPro") === "true";
+  const isTrialActive = daysUsed < 7;
+  const canAccessFull = isPro || isTrialActive;
+  const daysRemaining = Math.max(0, 7 - daysUsed);
+  return { trialStart, daysUsed, isPro, isTrialActive, canAccessFull, daysRemaining };
+}
+
+/**
+ * 降级用户的每日查询配额检查
+ */
+function checkQueryLimit() {
+  const { isPro, isTrialActive } = getTrialInfo();
+  if (isPro || isTrialActive) return true; // 全功能用户不限
+
+  const today = new Date().toISOString().split("T")[0];
+  const storedDate = localStorage.getItem("queryDate");
+  let count = parseInt(localStorage.getItem("queryCount") || "0", 10);
+
+  // 跨日重置
+  if (storedDate !== today) {
+    localStorage.setItem("queryDate", today);
+    localStorage.setItem("queryCount", "0");
+    count = 0;
+  }
+
+  if (count >= 1) {
+    showToast("今日免费查询次数已用完，明日再来吧～解锁全部功能仅需 ¥12");
+    return false;
+  }
+  return true;
+}
+
+function incrementQueryCount() {
+  const today = new Date().toISOString().split("T")[0];
+  const storedDate = localStorage.getItem("queryDate");
+  let count = parseInt(localStorage.getItem("queryCount") || "0", 10);
+  if (storedDate !== today) {
+    localStorage.setItem("queryDate", today);
+    count = 0;
+  }
+  count++;
+  localStorage.setItem("queryCount", count.toString());
+}
+
+// ===== 横幅展示 =====
+
+function updateBanners() {
+  const { isPro, isTrialActive, daysRemaining, daysUsed } = getTrialInfo();
+  const trialBanner = document.getElementById("trialBanner");
+  const trialText = document.getElementById("trialText");
+  const payBanner = document.getElementById("payBanner");
+
+  if (isPro) {
+    trialBanner.classList.add("hidden");
+    payBanner.classList.add("hidden");
+    return;
+  }
+
+  if (isTrialActive) {
+    // 试用期内
+    payBanner.classList.add("hidden");
+    if (daysRemaining === 1) {
+      trialText.textContent = "⚠️ 明天试用到期，解锁永久版仅需 ¥12";
+    } else {
+      trialText.textContent = `🔥 还剩 ${daysRemaining} 天免费体验全部功能`;
+    }
+    trialBanner.classList.remove("hidden");
+  } else {
+    // 试用已到期
+    trialBanner.classList.add("hidden");
+    payBanner.classList.remove("hidden");
+  }
+}
+
+function dismissTrialBanner() {
+  document.getElementById("trialBanner").classList.add("hidden");
+}
+
+// ===== 购买弹窗 =====
+
+function openPurchaseModal() {
+  document.getElementById("purchaseModal").classList.add("show");
+}
+
+function closePurchaseModal() {
+  document.getElementById("purchaseModal").classList.remove("show");
+}
+
+function confirmPurchase() {
+  localStorage.setItem("isPro", "true");
+  closePurchaseModal();
+  updateBanners();
+  // 刷新所有锁定区域
+  applyPermissionGates();
+  showToast("🎉 购买成功！感谢支持，尽情享用吧～");
+  // 如果有天气数据，重新渲染完整内容
+  if (lastWeatherData) {
+    renderWeather(lastWeatherData);
+    renderOutfit(lastWeatherData);
+  }
+}
+
+// ===== 权限门控 =====
+
+function applyPermissionGates() {
+  const { canAccessFull } = getTrialInfo();
+
+  // 穿搭推荐
+  document.getElementById("outfitLocked").classList.toggle("hidden", canAccessFull);
+
+  // 预报
+  document.getElementById("forecastLocked").classList.toggle("hidden", canAccessFull);
+
+  // 衣橱
+  document.getElementById("wardrobeLocked").classList.toggle("hidden", canAccessFull);
+
+  // 历史
+  document.getElementById("historyLocked").classList.toggle("hidden", canAccessFull);
+
+  // 分享按钮
+  document.getElementById("shareBtn").classList.toggle("hidden", !canAccessFull);
+
+  // 天气详情（降级用户隐藏体感/湿度/风速列）
+  const showDetails = canAccessFull;
+  document.getElementById("weatherDetails").classList.toggle("hidden", !showDetails);
+}
+
+// ===== Toast =====
+
+function showToast(msg, duration) {
+  const existing = document.querySelector(".toast");
+  if (existing) existing.remove();
+
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => { el.remove(); }, duration || 2500);
+}
+
+// ===== API 请求 =====
+
+async function apiFetch(path) {
+  const url = `${WORKER_BASE_URL}${path}`;
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    let errMsg = `请求失败 (${resp.status})`;
+    try {
+      const err = await resp.json();
+      if (err.error) errMsg = err.error;
+    } catch (_) {}
+    throw new Error(errMsg);
+  }
+  return resp.json();
+}
+
+// ===== 城市搜索 =====
+
+async function handleSearch() {
+  const input = document.getElementById("searchInput").value.trim();
+  if (!input) {
+    showToast("请输入城市名称");
+    return;
+  }
+  await searchCity(input);
+}
+
+async function searchCity(name) {
+  document.getElementById("searchInput").value = name;
+  hideSuggestions();
+  showLoading();
+
+  try {
+    // 先地理编码获取坐标
+    const geoData = await apiFetch(`/api/geo?q=${encodeURIComponent(name)}`);
+    if (!geoData || geoData.length === 0) {
+      hideLoading();
+      document.getElementById("weatherCard").classList.remove("hidden");
+      document.getElementById("weatherContent").classList.add("hidden");
+      document.getElementById("weatherError").classList.remove("hidden");
+      document.getElementById("errorText").textContent = "未找到该城市，请检查名称";
+      return;
+    }
+
+    const city = geoData[0];
+    currentCity = {
+      name: city.local_names && city.local_names.zh ? city.local_names.zh : city.name,
+      lat: city.lat,
+      lon: city.lon,
+      country: city.country,
+      state: city.state || "",
+    };
+    lastSearchCity = currentCity.name;
+
+    // 检查降级用户查询配额
+    if (!checkQueryLimit()) {
+      hideLoading();
+      // 仍然显示天气（降级版），但不调穿搭引擎
+      // 先增量计数，再调天气 API
+      incrementQueryCount();
+    }
+
+    // 获取天气
+    const weatherData = await apiFetch(`/api/weather?lat=${city.lat}&lon=${city.lon}`);
+    lastWeatherData = weatherData;
+    hideLoading();
+    renderWeather(weatherData);
+    renderOutfit(weatherData);
+    renderForecast(city.lat, city.lon);
+
+    // 保存历史
+    saveHistory(weatherData);
+
+    // 增量计数（降级用户）
+    const { isPro, isTrialActive } = getTrialInfo();
+    if (!isPro && !isTrialActive) {
+      incrementQueryCount();
+      document.getElementById("queryLimitMsg").classList.remove("hidden");
+      document.getElementById("queryLimitMsg").textContent = `今日剩余查询：0 次`;
+    } else {
+      document.getElementById("queryLimitMsg").classList.add("hidden");
+    }
+
+  } catch (err) {
+    hideLoading();
+    document.getElementById("weatherCard").classList.remove("hidden");
+    document.getElementById("weatherContent").classList.add("hidden");
+    document.getElementById("weatherError").classList.remove("hidden");
+    document.getElementById("errorText").textContent = err.message || "天气获取失败，请稍后重试";
+  }
+}
+
+function retryLastSearch() {
+  if (lastSearchCity) {
+    searchCity(lastSearchCity);
+  } else {
+    showToast("请先搜索城市");
+  }
+}
+
+// ===== 自动补全 =====
+
+document.getElementById("searchInput").addEventListener("input", function() {
+  clearTimeout(searchTimer);
+  const q = this.value.trim();
+  if (q.length < 1) {
+    hideSuggestions();
+    return;
+  }
+  searchTimer = setTimeout(async () => {
+    try {
+      const data = await apiFetch(`/api/geo?q=${encodeURIComponent(q)}`);
+      showSuggestions(data);
+    } catch (_) {
+      hideSuggestions();
+    }
+  }, 300);
+});
+
+document.getElementById("searchInput").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    handleSearch();
+  }
+});
+
+// 点击外部关闭下拉
+document.addEventListener("click", function(e) {
+  if (!e.target.closest(".search-section")) {
+    hideSuggestions();
+  }
+});
+
+function showSuggestions(data) {
+  const el = document.getElementById("suggestions");
+  el.innerHTML = "";
+  if (!data || data.length === 0) {
+    el.classList.remove("show");
+    return;
+  }
+  data.forEach(item => {
+    const name = item.local_names && item.local_names.zh ? item.local_names.zh : item.name;
+    const state = item.state || "";
+    const sub = `${item.country}${state ? " · " + state : ""}`;
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `${name}<span class="sub">${sub}</span>`;
+    div.onclick = () => searchCity(name);
+    el.appendChild(div);
+  });
+  el.classList.add("show");
+}
+
+function hideSuggestions() {
+  document.getElementById("suggestions").classList.remove("show");
+}
+
+// ===== 加载状态 =====
+
+function showLoading() {
+  document.getElementById("skeletonLoader").classList.remove("hidden");
+  document.getElementById("weatherCard").classList.add("hidden");
+  document.getElementById("outfitCard").classList.add("hidden");
+  document.getElementById("forecastCard").classList.add("hidden");
+  document.getElementById("shareBtn").classList.add("hidden");
+}
+
+function hideLoading() {
+  document.getElementById("skeletonLoader").classList.add("hidden");
+}
+
+// ===== 天气渲染 =====
+
+function getWeatherIcon(iconCode) {
+  return WEATHER_ICONS[iconCode] || "🌤";
+}
+
+function getWeatherBgClass(iconCode) {
+  if (!iconCode) return "weather-bg-default";
+  const code = iconCode.substring(0, 2);
+  return WEATHER_BG_CLASSES[code] || "weather-bg-default";
+}
+
+function renderWeather(data) {
+  const { canAccessFull } = getTrialInfo();
+  const card = document.getElementById("weatherCard");
+  const content = document.getElementById("weatherContent");
+
+  card.classList.remove("hidden");
+  content.classList.remove("hidden");
+  document.getElementById("weatherError").classList.add("hidden");
+
+  // 设置天气主题背景
+  const iconCode = data.weather && data.weather[0] ? data.weather[0].icon : "";
+  card.className = `card weather-card ${getWeatherBgClass(iconCode)}`;
+
+  // 城市名 + 日期
+  document.getElementById("displayCity").textContent = currentCity ? currentCity.name : "--";
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${WEEKDAYS[now.getDay()]}`;
+  document.getElementById("displayDate").textContent = dateStr;
+
+  // 天气 emoji + 温度
+  document.getElementById("displayEmoji").textContent = getWeatherIcon(iconCode);
+  document.getElementById("displayTemp").textContent = Math.round(data.main.temp);
+  document.getElementById("displayDesc").textContent = data.weather[0] ? data.weather[0].description : "";
+
+  // 详细信息（全功能用户可见）
+  if (canAccessFull) {
+    document.getElementById("weatherDetails").classList.remove("hidden");
+    document.getElementById("feelsLike").textContent = `${Math.round(data.main.feels_like)}°C`;
+    document.getElementById("humidity").textContent = `${data.main.humidity}%`;
+    document.getElementById("windSpeed").textContent = `${Math.round(data.wind.speed * 3.6)} km/h`;
+  } else {
+    document.getElementById("weatherDetails").classList.add("hidden");
+  }
+
+  applyPermissionGates();
+}
+
+// ===== 穿搭推荐引擎 =====
+
+function generateOutfit(data) {
+  const { canAccessFull } = getTrialInfo();
+  if (!canAccessFull) return null;
+
+  const temp = data.main.feels_like || data.main.temp;
+  const weatherMain = data.weather[0] ? data.weather[0].main : "";
+  const weatherDesc = data.weather[0] ? data.weather[0].description : "";
+  const windSpeed = data.wind.speed; // m/s
+  const windKmh = windSpeed * 3.6;
+
+  // 获取今日最高最低温（如果 API 有返回）
+  const tempMax = data.main.temp_max || data.main.temp;
+  const tempMin = data.main.temp_min || data.main.temp;
+  const tempDiff = tempMax - tempMin;
+
+  let title = "";
+  let items = [];
+
+  // 温度区间判断
+  if (temp > 32) {
+    title = "🔥 高温预警";
+    items = ["吊带/背心", "短裤/短裙", "防晒衣", "遮阳帽", "小风扇"];
+  } else if (temp > 26) {
+    title = "☀️ 夏季清凉穿搭";
+    items = ["短袖T恤", "短裤/阔腿裤", "凉鞋/帆布鞋", "墨镜"];
+  } else if (temp > 20) {
+    title = "🌸 春秋舒适穿搭";
+    items = ["薄长袖/衬衫", "牛仔裤/半身裙", "小白鞋", "薄外套备用"];
+  } else if (temp > 15) {
+    title = "🍂 微凉舒适穿搭";
+    items = ["卫衣/针织衫", "牛仔裤", "运动鞋", "风衣/薄夹克"];
+  } else if (temp > 10) {
+    title = "🧥 较凉注意保暖";
+    items = ["毛衣/加厚卫衣", "牛仔裤/加绒裤", "短靴", "大衣/夹克", "围巾"];
+  } else if (temp > 5) {
+    title = "❄️ 寒冷天气";
+    items = ["棉服/羽绒服", "毛衣内搭", "加绒裤", "雪地靴", "围巾手套"];
+  } else if (temp > 0) {
+    title = "🥶 严寒天气";
+    items = ["厚羽绒服", "高领毛衣", "加厚保暖裤", "雪地靴", "帽子围巾手套全套"];
+  } else {
+    title = "⚠️ 极寒预警";
+    items = ["厚羽绒服", "保暖内衣+毛衣", "加绒棉裤", "防滑雪地靴", "帽子围巾口罩手套"];
+  }
+
+  // 天气叠加规则
+  let tips = [];
+
+  if (weatherDesc.includes("雨") || weatherMain.includes("Rain") || weatherMain.includes("Drizzle")) {
+    items.push("🌂雨伞");
+    items.push("🥾防水鞋");
+  }
+  if (weatherDesc.includes("雪") || weatherMain.includes("Snow")) {
+    items.push("🧤防水手套");
+  }
+  if (windKmh > 30) {
+    items.push("🧥防风外套");
+    tips.push("今天风大，建议穿防风外套");
+  }
+  if (weatherDesc.includes("雾") || weatherDesc.includes("霾") || weatherMain.includes("Mist") || weatherMain.includes("Haze")) {
+    items.push("😷口罩");
+  }
+  if (tempDiff > 8) {
+    tips.push("🌡️ 昼夜温差大，建议带外套");
+  }
+
+  // 去重
+  items = [...new Set(items)];
+
+  // 衣橱联动：匹配已有的衣物
+  const matchResults = matchWardrobe(items);
+
+  return { title, items, tips, matches: matchResults };
+}
+
+/**
+ * 衣橱联动：从衣橱中匹配推荐单品
+ */
+function matchWardrobe(recommendedItems) {
+  const matches = [];
+  const allItems = [
+    ...wardrobe.tops.map(i => ({ ...i, cat: "tops" })),
+    ...wardrobe.bottoms.map(i => ({ ...i, cat: "bottoms" })),
+    ...wardrobe.outerwear.map(i => ({ ...i, cat: "outerwear" })),
+    ...wardrobe.shoes.map(i => ({ ...i, cat: "shoes" })),
+    ...wardrobe.accessories.map(i => ({ ...i, cat: "accessories" })),
+  ];
+
+  recommendedItems.forEach(item => {
+    // 模糊匹配：推荐单品名中的关键词是否在衣橱衣物名中
+    const found = allItems.find(w => {
+      // 提取关键词（去掉 emoji）
+      const cleanItem = item.replace(/[\u{1F300}-\u{1FAFF}]/gu, "").trim();
+      return w.name.includes(cleanItem) || cleanItem.includes(w.name.replace(/[\u{1F300}-\u{1FAFF}]/gu, "").trim());
+    });
+    if (found) {
+      matches.push({ item, wardrobeItem: found });
+    }
+  });
+
+  return matches;
+}
+
+function renderOutfit(data) {
+  const card = document.getElementById("outfitCard");
+  const outfit = generateOutfit(data);
+
+  if (!outfit) {
+    // 降级用户：显示锁定遮罩，但不完全隐藏卡片
+    card.classList.remove("hidden");
+    document.getElementById("outfitLocked").classList.remove("hidden");
+    document.getElementById("outfitTitle").textContent = "穿搭推荐";
+    document.getElementById("outfitTags").innerHTML = "";
+    document.getElementById("outfitTips").textContent = "";
+    return;
+  }
+
+  card.classList.remove("hidden");
+  document.getElementById("outfitLocked").classList.add("hidden");
+  document.getElementById("outfitTitle").textContent = outfit.title;
+
+  // 渲染标签
+  const tagsEl = document.getElementById("outfitTags");
+  tagsEl.innerHTML = "";
+
+  // 先展示衣橱匹配项
+  outfit.matches.forEach(m => {
+    const tag = document.createElement("span");
+    tag.className = "tag match";
+    tag.textContent = `你的${m.wardrobeItem.name}`;
+    tagsEl.appendChild(tag);
+  });
+
+  // 展示全部推荐单品
+  outfit.items.forEach(item => {
+    const isMatched = outfit.matches.some(m => m.item === item);
+    if (isMatched) return; // 已展示
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = item;
+    tagsEl.appendChild(tag);
+  });
+
+  // 渲染 tips
+  const tipsEl = document.getElementById("outfitTips");
+  if (outfit.tips.length > 0) {
+    tipsEl.textContent = "💡 " + outfit.tips.join("；");
+    tipsEl.classList.remove("hidden");
+  } else {
+    tipsEl.classList.add("hidden");
+  }
+
+  applyPermissionGates();
+}
+
+// ===== 预报 =====
+
+async function renderForecast(lat, lon) {
+  const { canAccessFull } = getTrialInfo();
+  if (!canAccessFull) {
+    document.getElementById("forecastCard").classList.remove("hidden");
+    applyPermissionGates();
+    return;
+  }
+
+  try {
+    const data = await apiFetch(`/api/forecast?lat=${lat}&lon=${lon}`);
+    const list = data.list || [];
+
+    // 取未来3天中午（12:00）的数据
+    const middayData = [];
+    const seenDates = new Set();
+
+    list.forEach(item => {
+      const date = item.dt_txt.split(" ")[0];
+      if (seenDates.has(date)) return;
+      if (item.dt_txt.includes("12:00") || item.dt_txt.includes("09:00") || item.dt_txt.includes("15:00")) {
+        seenDates.add(date);
+        middayData.push(item);
+      }
+    });
+
+    // 最多3天
+    const forecastItems = middayData.slice(0, 3);
+
+    const container = document.getElementById("forecastList");
+    container.innerHTML = "";
+
+    forecastItems.forEach((item, idx) => {
+      const date = new Date(item.dt * 1000);
+      const dayName = idx === 0 ? "今天" : WEEKDAYS[date.getDay()];
+      const icon = item.weather[0] ? getWeatherIcon(item.weather[0].icon) : "🌤";
+      const tempMin = Math.round(item.main.temp_min);
+      const tempMax = Math.round(item.main.temp_max);
+
+      const div = document.createElement("div");
+      div.className = "forecast-item";
+      div.innerHTML = `
+        <div class="day">${dayName}</div>
+        <div class="emoji">${icon}</div>
+        <div class="temp-range">${tempMin}° / ${tempMax}°</div>
+      `;
+      container.appendChild(div);
+    });
+
+    document.getElementById("forecastCard").classList.remove("hidden");
+    applyPermissionGates();
+  } catch (err) {
+    // 预报加载失败不阻塞主流程
+    console.error("Forecast error:", err);
+  }
+}
+
+// ===== 衣橱管理 =====
+
+function initWardrobe() {
+  const stored = localStorage.getItem("wardrobe");
+  if (stored) {
+    try {
+      wardrobe = JSON.parse(stored);
+    } catch (_) {}
+  }
+  renderWardrobe();
+}
+
+function saveWardrobe() {
+  localStorage.setItem("wardrobe", JSON.stringify(wardrobe));
+}
+
+function renderWardrobe() {
+  const items = wardrobe[currentWardrobeCat] || [];
+  const container = document.getElementById("wardrobeItems");
+
+  if (items.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:12px;color:#bbb;font-size:14px;">暂无衣物，添加一件吧～</div>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  items.forEach((item, idx) => {
+    const seasonLabel = { "spring-summer": "春夏", "autumn-winter": "秋冬", "all-season": "四季" }[item.season] || "四季";
+    const seasonClass = item.season === "autumn-winter" ? "autumn-winter" : item.season === "all-season" ? "all-season" : "";
+
+    const div = document.createElement("div");
+    div.className = "wardrobe-item";
+    div.innerHTML = `
+      <div class="info">
+        <span>${item.name}</span>
+        <span class="season-tag ${seasonClass}">${seasonLabel}</span>
+      </div>
+      <button class="del-btn" onclick="deleteWardrobeItem(${idx})">✕</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// 衣橱分类切换
+document.getElementById("wardrobeTabs").addEventListener("click", function(e) {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  document.querySelectorAll("#wardrobeTabs button").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentWardrobeCat = btn.dataset.cat;
+  renderWardrobe();
+});
+
+function addWardrobeItem() {
+  const name = document.getElementById("wardrobeNameInput").value.trim();
+  if (!name) {
+    showToast("请输入单品名称");
+    return;
+  }
+  const season = document.getElementById("wardrobeSeasonSelect").value;
+  if (!wardrobe[currentWardrobeCat]) wardrobe[currentWardrobeCat] = [];
+  wardrobe[currentWardrobeCat].push({ name, season });
+  saveWardrobe();
+  renderWardrobe();
+  document.getElementById("wardrobeNameInput").value = "";
+
+  // 如果已展示穿搭，联动刷新
+  if (lastWeatherData) {
+    renderOutfit(lastWeatherData);
+  }
+  showToast("✅ 已添加");
+}
+
+function deleteWardrobeItem(idx) {
+  wardrobe[currentWardrobeCat].splice(idx, 1);
+  saveWardrobe();
+  renderWardrobe();
+  if (lastWeatherData) {
+    renderOutfit(lastWeatherData);
+  }
+}
+
+// ===== 历史记录 =====
+
+function saveHistory(weatherData) {
+  if (!currentCity) return;
+  const entry = {
+    city: currentCity.name,
+    temp: Math.round(weatherData.main.temp),
+    icon: weatherData.weather[0] ? weatherData.weather[0].icon : "01d",
+    desc: weatherData.weather[0] ? weatherData.weather[0].description : "",
+    date: new Date().toISOString(),
+  };
+  // 从 localStorage 读取现有历史
+  try {
+    history = JSON.parse(localStorage.getItem("history") || "[]");
+  } catch (_) { history = []; }
+
+  // 去重：同一城市同一天不重复记录
+  const today = new Date().toISOString().split("T")[0];
+  const exists = history.some(h => h.city === currentCity.name && h.date.startsWith(today));
+  if (!exists) {
+    history.unshift(entry);
+    // 保留最近30条
+    if (history.length > 30) history = history.slice(0, 30);
+    localStorage.setItem("history", JSON.stringify(history));
+  }
+
+  renderHistory();
+}
+
+function renderHistory() {
+  try {
+    history = JSON.parse(localStorage.getItem("history") || "[]");
+  } catch (_) { history = []; }
+
+  const container = document.getElementById("historyList");
+  if (history.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:12px;color:#bbb;font-size:14px;">暂无查询记录</div>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  history.slice(0, 7).forEach(h => {
+    const date = new Date(h.date);
+    const dateStr = `${date.getMonth()+1}/${date.getDate()}`;
+    const icon = getWeatherIcon(h.icon);
+    const div = document.createElement("div");
+    div.className = "history-item";
+    div.innerHTML = `
+      <span class="h-date">${dateStr}</span>
+      <span class="h-info"><span class="h-city">${h.city}</span> · ${icon} ${h.temp}°C ${h.desc}</span>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ===== 分享截图 =====
+
+async function shareScreenshot() {
+  const { canAccessFull } = getTrialInfo();
+  if (!canAccessFull) {
+    openPurchaseModal();
+    return;
+  }
+
+  try {
+    showToast("⏳ 正在生成截图...");
+    const target = document.getElementById("contentArea");
+
+    // 克隆内容避免干扰页面
+    const clone = target.cloneNode(true);
+    clone.style.width = "480px";
+    clone.style.padding = "16px";
+    clone.style.background = "#f5f5f5";
+    clone.style.borderRadius = "16px";
+
+    const wrapper = document.createElement("div");
+    wrapper.style.position = "fixed";
+    wrapper.style.left = "-9999px";
+    wrapper.style.top = "0";
+    wrapper.style.zIndex = "-1";
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#f5f5f5",
+      logging: false,
+    });
+
+    document.body.removeChild(wrapper);
+
+    // 转为图片并下载
+    const link = document.createElement("a");
+    link.download = `CloWeather-${currentCity ? currentCity.name : "穿搭"}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    showToast("✅ 截图已保存");
+  } catch (err) {
+    console.error("Screenshot error:", err);
+    showToast("截图生成失败，请重试");
+  }
+}
+
+// ===== 离线检测 =====
+
+window.addEventListener("offline", function() {
+  showToast("⚠️ 网络已断开，部分功能可能不可用");
+});
+
+// ===== 初始化 =====
+
+function init() {
+  initTrial();
+  updateBanners();
+
+  // 初始化衣橱
+  initWardrobe();
+
+  // 初始化历史
+  renderHistory();
+
+  // 显示衣橱和历史卡片（空状态）
+  document.getElementById("wardrobeCard").classList.remove("hidden");
+  document.getElementById("historyCard").classList.remove("hidden");
+
+  applyPermissionGates();
+
+  // 如果降级用户有上次查询的 lastSearchCity，不自动查询
+  console.log("CloWeather 已启动 🌤️");
+}
+
+// 启动
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
