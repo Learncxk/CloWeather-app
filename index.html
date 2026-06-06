@@ -829,9 +829,7 @@
 // 自动检测运行环境
 // Vercel / GitHub Pages / 本地：API 同源（/api/*）
 // Cloudflare Workers 部署时改成 Worker 域名
-const WORKER_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.includes("vercel.app")
-  ? ""  // 本地/Vercel：API 在 /api/* 下同源
-  : "https://cloweather-api.cloweather.workers.dev"; // Cloudflare Workers 域名（备用）
+const WORKER_BASE_URL = ""; // Cloudflare Pages 同源部署 // Cloudflare Workers 域名（备用）
 
 // ===== 天气图标映射 =====
 const WEATHER_ICONS = {
