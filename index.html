@@ -213,7 +213,7 @@
     }
     .weather-card .date-display {
       font-size: 13px;
-      color: #999;
+      color: #666;
       margin-top: 2px;
     }
     .weather-card .weather-emoji {
@@ -228,7 +228,7 @@
     .weather-card .temp-display .unit {
       font-size: 24px;
       font-weight: 400;
-      color: #888;
+      color: #555;
     }
     .weather-card .weather-desc {
       font-size: 15px;
@@ -241,7 +241,7 @@
       gap: 24px;
       margin-top: 14px;
       font-size: 14px;
-      color: #777;
+      color: #444;
     }
     .weather-details .item {
       display: flex;
@@ -251,7 +251,7 @@
     }
     .weather-details .item .label {
       font-size: 12px;
-      color: #aaa;
+      color: #777;
     }
 
     /* ===== 穿搭推荐 ===== */
@@ -310,7 +310,7 @@
     }
     .locked-overlay p {
       font-size: 14px;
-      color: #888;
+      color: #555;
       margin-bottom: 12px;
     }
     .locked-overlay button {
@@ -359,7 +359,7 @@
     }
     .forecast-item .temp-range {
       font-size: 14px;
-      color: #666;
+      color: #444;
     }
 
     /* ===== 衣橱管理 ===== */
@@ -466,7 +466,7 @@
     .history-item:last-child { border-bottom: none; }
     .history-item .h-date {
       font-size: 12px;
-      color: #999;
+      color: #777;
       min-width: 80px;
     }
     .history-item .h-info {
@@ -507,7 +507,7 @@
       margin-bottom: 6px;
     }
     .modal .subtitle {
-      color: #999;
+      color: #666;
       font-size: 14px;
       margin-bottom: 20px;
     }
@@ -551,7 +551,7 @@
     .modal .cancel-btn {
       background: none;
       border: none;
-      color: #999;
+      color: #777;
       font-size: 14px;
       cursor: pointer;
     }
@@ -623,7 +623,7 @@
     }
     .error-box p {
       font-size: 14px;
-      color: #999;
+      color: #666;
       margin-bottom: 12px;
     }
     .error-box .retry-btn {
@@ -648,6 +648,20 @@
     .weather-bg-mist { background: linear-gradient(135deg, #BDBDBD, #D6D6D6); }
     .weather-bg-thunderstorm { background: linear-gradient(135deg, #4A4A4A, #757575); }
     .weather-bg-default { background: linear-gradient(135deg, #f5f5f5, #e0e0e0); }
+    /* 深色背景天气下文字反白 */
+    .weather-bg-thunderstorm .city-name,
+    .weather-bg-thunderstorm .date-display,
+    .weather-bg-thunderstorm .temp-display,
+    .weather-bg-thunderstorm .temp-display .unit,
+    .weather-bg-thunderstorm .weather-desc,
+    .weather-bg-thunderstorm .weather-details,
+    .weather-bg-thunderstorm .weather-details .item .label { color: #fff !important; }
+    .weather-bg-clear .date-display,
+    .weather-bg-clear .temp-display .unit,
+    .weather-bg-clear .weather-details .item .label { color: #555 !important; }
+    .weather-bg-clouds .date-display,
+    .weather-bg-clouds .temp-display .unit { color: #e0e0e0 !important; }
+    .weather-bg-clouds .weather-details .item .label { color: #ccc !important; }
   </style>
 </head>
 <body>
