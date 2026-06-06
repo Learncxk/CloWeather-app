@@ -23,6 +23,7 @@ const ALLOWED_ORIGINS = [
   "https://cloweather.pages.dev",
   "https://cloweather.vercel.app",
   "https://cloweather.netlify.app",
+  "https://learncxk.github.io",
 ];
 
 /**
@@ -129,50 +130,53 @@ function handleHealth() {
 
 // ===== 入口 =====
 
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const origin = request.headers.get("Origin") || "";
-    const headers = corsHeaders(origin);
-    const path = url.pathname;
+addEventListener("fetch", (event) => {
+  const request = event.request;
+  const url = new URL(request.url);
+  const origin = request.headers.get("Origin") || "";
+  const headers = corsHeaders(origin);
+  const path = url.pathname;
 
-    // 处理 OPTIONS 预检请求
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers });
-    }
+  // 处理 OPTIONS 预检请求
+  if (request.method === "OPTIONS") {
+    return event.respondWith(new Response(null, { status: 204, headers }));
+  }
 
-    try {
-      let data;
-      switch (path) {
-        case "/health":
-          return handleHealth();
-        case "/api/geo":
-          data = await handleGeo(request);
-          break;
-        case "/api/weather":
-          data = await handleWeather(request);
-          break;
-        case "/api/forecast":
-          data = await handleForecast(request);
-          break;
-        default:
-          return new Response(JSON.stringify({ error: "未知路由" }), {
-            status: 404,
-            headers: { ...headers, "Content-Type": "application/json" },
-          });
+  event.respondWith(
+    (async () => {
+      try {
+        let data;
+        switch (path) {
+          case "/health":
+            return handleHealth();
+          case "/api/geo":
+            data = await handleGeo(request);
+            break;
+          case "/api/weather":
+            data = await handleWeather(request);
+            break;
+          case "/api/forecast":
+            data = await handleForecast(request);
+            break;
+          default:
+            return new Response(JSON.stringify({ error: "未知路由" }), {
+              status: 404,
+              headers: { ...headers, "Content-Type": "application/json" },
+            });
+        }
+
+        // 给响应加上 CORS 头
+        const body = await data.text();
+        return new Response(body, {
+          status: data.status,
+          headers: { ...headers, ...Object.fromEntries(data.headers) },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 400,
+          headers: { ...headers, "Content-Type": "application/json" },
+        });
       }
-
-      // 给响应加上 CORS 头
-      const body = await data.text();
-      return new Response(body, {
-        status: data.status,
-        headers: { ...headers, ...Object.fromEntries(data.headers) },
-      });
-    } catch (err) {
-      return new Response(JSON.stringify({ error: err.message }), {
-        status: 400,
-        headers: { ...headers, "Content-Type": "application/json" },
-      });
-    }
-  },
-};
+    })()
+  );
+});
